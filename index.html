@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DevSpark - Get Roasted. Get Better.</title>
+    
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Google Fonts - Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    
+    <style>
+        /* IBM Carbon Design System Custom Styles */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #FFFFFF;
+            color: #161616;
+        }
+        
+        /* IBM Carbon Color Palette */
+        :root {
+            --white: #FFFFFF;
+            --gray-10: #F8F9FA;
+            --black: #161616;
+            --blue: #0F62FE;
+            --red: #DA1E28;
+        }
+        
+        /* Remove Tailwind's default border-radius */
+        * {
+            border-radius: 0 !important;
+        }
+        
+        /* Code blocks */
+        .code-block {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.875rem;
+            line-height: 1.5;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+        
+        /* IBM Carbon 1px borders */
+        .carbon-border {
+            border: 1px solid #161616;
+        }
+        
+        .carbon-border-top {
+            border-top: 1px solid #161616;
+        }
+        
+        .carbon-border-bottom {
+            border-bottom: 1px solid #161616;
+        }
+        
+        /* Button styles */
+        .carbon-button {
+            background-color: #0F62FE;
+            color: #FFFFFF;
+            border: 1px solid #0F62FE;
+            padding: 0.875rem 2rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+        }
+        
+        .carbon-button:hover {
+            background-color: #0353E9;
+        }
+        
+        .carbon-button:disabled {
+            background-color: #C6C6C6;
+            border-color: #C6C6C6;
+            cursor: not-allowed;
+        }
+        
+        /* Alert box */
+        .alert-box {
+            background-color: #FFF1F1;
+            border: 1px solid #DA1E28;
+            padding: 1.5rem;
+        }
+        
+        /* Loading spinner */
+        .spinner {
+            border: 3px solid #F8F9FA;
+            border-top: 3px solid #0F62FE;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        /* Blur overlay for Active Reflection Lock */
+        .blur-overlay {
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            background-color: rgba(255, 255, 255, 0.3);
+        }
+        
+        /* Smooth transitions */
+        .fade-in {
+            animation: fadeIn 0.5s ease-in;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        /* Textarea styling */
+        textarea {
+            font-family: 'JetBrains Mono', monospace;
+            resize: vertical;
+        }
+        
+        /* Critique item styling */
+        .critique-item {
+            border-left: 3px solid #DA1E28;
+            padding-left: 1rem;
+            margin-bottom: 1rem;
+        }
+        
+        .critique-line {
+            font-weight: 600;
+            color: #DA1E28;
+            font-size: 0.875rem;
+        }
+        
+        .critique-text {
+            color: #161616;
+            margin-top: 0.25rem;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="carbon-border-bottom bg-white">
+        <div class="max-w-7xl mx-auto px-6 py-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-2">
+                    <h1 class="text-2xl font-bold text-black">DevSpark</h1>
+                    <span class="text-gray-400">//</span>
+                    <span class="text-sm text-gray-600">Powered by IBM Bob</span>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="bg-white carbon-border-bottom">
+        <div class="max-w-7xl mx-auto px-6 py-16 text-center">
+            <h2 class="text-5xl font-bold text-black mb-4">Get Roasted. Get Better.</h2>
+            <p class="text-xl text-gray-600 max-w-2xl mx-auto">
+                Submit your code and let our AI-powered senior developer tear it apart—then watch it transform into production-ready excellence.
+            </p>
+        </div>
+    </section>
+
+    <!-- Input Section -->
+    <section id="inputSection" class="bg-gray-10 py-12">
+        <div class="max-w-7xl mx-auto px-6">
+            <div class="bg-white carbon-border p-8">
+                <label for="codeInput" class="block text-sm font-semibold text-black mb-3">
+                    Paste Your Code Here
+                </label>
+                <textarea 
+                    id="codeInput" 
+                    class="w-full carbon-border p-4 text-sm focus:outline-none focus:border-blue-600"
+                    rows="15"
+                    placeholder="// Paste your code here and prepare to be humbled...
+function getData() {
+    var data = null;
+    $.ajax({
+        url: '/api/data',
+        async: false,
+        success: function(result) {
+            data = result;
+        }
+    });
+    return data;
+}"
+                ></textarea>
+                
+                <div class="mt-6 flex items-center justify-center">
+                    <button 
+                        id="roastButton" 
+                        class="carbon-button"
+                        onclick="handleRoastClick()"
+                    >
+                        Roast & Refactor
+                    </button>
+                </div>
+                
+                <!-- Loading State -->
+                <div id="loadingState" class="hidden mt-8 flex flex-col items-center justify-center">
+                    <div class="spinner"></div>
+                    <p class="mt-4 text-sm text-gray-600">Analyzing your code with brutal honesty...</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Results Dashboard (Initially Hidden) -->
+    <section id="resultsSection" class="hidden bg-white py-12">
+        <div class="max-w-7xl mx-auto px-6">
+            
+            <!-- Senior Dev Code Review (Roast) -->
+            <div class="alert-box mb-8 fade-in">
+                <div class="flex items-start">
+                    <svg class="w-6 h-6 text-red-600 mr-3 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>
+                    </svg>
+                    <div class="flex-1">
+                        <h3 class="text-lg font-bold text-red-600 mb-3">Senior Dev Code Review</h3>
+                        <div id="roastContent" class="space-y-3">
+                            <!-- Critiques will be dynamically inserted here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Unlock Button -->
+            <div class="mb-8 text-center">
+                <button 
+                    id="unlockButton" 
+                    class="carbon-button bg-black border-black hover:bg-gray-800"
+                    onclick="unlockRefactoredCode()"
+                >
+                    I Understand My Mistakes → Unlock Code
+                </button>
+            </div>
+
+            <!-- Code Comparison Grid -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                
+                <!-- Original Code -->
+                <div class="carbon-border bg-gray-10">
+                    <div class="carbon-border-bottom bg-white px-4 py-3">
+                        <h4 class="font-semibold text-black">Original Code</h4>
+                    </div>
+                    <div class="p-4 overflow-x-auto">
+                        <pre id="originalCode" class="code-block text-black"></pre>
+                    </div>
+                </div>
+
+                <!-- Enterprise Refactor (with blur overlay) -->
+                <div class="carbon-border bg-gray-10 relative">
+                    <div class="carbon-border-bottom bg-white px-4 py-3">
+                        <h4 class="font-semibold text-black">Enterprise Refactor</h4>
+                    </div>
+                    <div class="p-4 overflow-x-auto relative">
+                        <pre id="refactoredCode" class="code-block text-black"></pre>
+                        
+                        <!-- Blur Overlay (Active Reflection Lock) -->
+                        <div id="blurOverlay" class="absolute inset-0 blur-overlay flex items-center justify-center">
+                            <div class="bg-white carbon-border px-6 py-4 text-center">
+                                <svg class="w-12 h-12 mx-auto mb-3 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+                                </svg>
+                                <p class="font-semibold text-black">Locked</p>
+                                <p class="text-sm text-gray-600 mt-1">Acknowledge your mistakes to unlock</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="carbon-border-top bg-white py-8 mt-12">
+        <div class="max-w-7xl mx-auto px-6 text-center">
+            <p class="text-sm text-gray-600">
+                DevSpark © 2026 | Built for developers who want to level up | Powered by IBM Bob
+            </p>
+        </div>
+    </footer>
+
+    <script>
+        // Handle Roast & Refactor button click
+        async function handleRoastClick() {
+            const codeInput = document.getElementById('codeInput');
+            const code = codeInput.value.trim();
+            
+            // Validate input
+            if (!code) {
+                alert('Please paste some code first!');
+                return;
+            }
+            
+            // Show loading state
+            document.getElementById('roastButton').disabled = true;
+            document.getElementById('loadingState').classList.remove('hidden');
+            
+            try {
+                // Make real POST request to backend
+                const response = await fetch('http://localhost:8000/analyze', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        code: code,
+                        language: null  // Optional: could detect or let user specify
+                    })
+                });
+                
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({}));
+                    throw new Error(errorData.detail || `HTTP error! status: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                displayResults(data);
+                
+            } catch (error) {
+                // Hide loading state
+                document.getElementById('loadingState').classList.add('hidden');
+                document.getElementById('roastButton').disabled = false;
+                
+                // Show error to user
+                alert(`Error: ${error.message}\n\nPlease make sure the backend server is running on http://localhost:8000`);
+                console.error('Failed to analyze code:', error);
+            }
+        }
+
+        // Display results from API response
+        function displayResults(response) {
+            // Hide loading state
+            document.getElementById('loadingState').classList.add('hidden');
+            
+            // Populate roast critiques
+            const roastContent = document.getElementById('roastContent');
+            roastContent.innerHTML = '';
+            
+            response.roast_critiques.forEach(critique => {
+                const critiqueDiv = document.createElement('div');
+                critiqueDiv.className = 'critique-item';
+                
+                // Map backend's 'line' integer to UI display
+                const lineDisplay = critique.line !== null && critique.line !== undefined
+                    ? `Line ${critique.line}`
+                    : 'General';
+                
+                critiqueDiv.innerHTML = `
+                    <div class="critique-line">${lineDisplay}</div>
+                    <div class="critique-text">${critique.critique}</div>
+                `;
+                roastContent.appendChild(critiqueDiv);
+            });
+            
+            // Populate code blocks
+            document.getElementById('originalCode').textContent = response.original_code;
+            document.getElementById('refactoredCode').textContent = response.refactored_code;
+            
+            // Show results section with animation
+            const resultsSection = document.getElementById('resultsSection');
+            resultsSection.classList.remove('hidden');
+            resultsSection.classList.add('fade-in');
+            
+            // Scroll to results
+            resultsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+
+        // Unlock refactored code (remove blur overlay)
+        function unlockRefactoredCode() {
+            const blurOverlay = document.getElementById('blurOverlay');
+            const unlockButton = document.getElementById('unlockButton');
+            
+            // Remove blur overlay with fade out
+            blurOverlay.style.transition = 'opacity 0.3s ease';
+            blurOverlay.style.opacity = '0';
+            
+            setTimeout(() => {
+                blurOverlay.style.display = 'none';
+            }, 300);
+            
+            // Update button state
+            unlockButton.textContent = '✓ Code Unlocked';
+            unlockButton.disabled = true;
+            unlockButton.classList.add('bg-gray-400', 'border-gray-400');
+            unlockButton.classList.remove('bg-black', 'border-black', 'hover:bg-gray-800');
+        }
+    </script>
+</body>
+</html>
