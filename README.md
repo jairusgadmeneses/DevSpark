@@ -21,13 +21,6 @@ Most AI assistants make engineers lazy by providing immediate answers, leading t
 
 ---
 
-## 📺 Demo & Previews
-
-*(Replace this section with a link to your YouTube demo video or add screenshots of the UI here before final submission)*
-* `[Screenshot 1: The Code Roast UI Layout]`
-* `[Screenshot 2: The Active Reflection Lock Blur Active]`
-
----
 
 ## 🛠️ Tech Stack & Architecture
 
