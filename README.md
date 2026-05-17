@@ -3,7 +3,7 @@
 ![FastAPI](https://img.shields.io/badge/FastAPI-005571?style=for-the-badge&logo=fastapi)
 ![TailwindCSS](https://img.shields.io/badge/tailwindcss-%2338B2AC.svg?style=for-the-badge&logo=tailwind-css&logoColor=white)
 ![IBM watsonx.ai](https://img.shields.io/badge/IBM%20watsonx.ai-0F62FE?style=for-the-badge&logo=ibm&logoColor=white)
-![IBM Granite](https://img.shields.io/badge/IBM%20Granite%203-005F9E?style=for-the-badge&logo=ibm&logoColor=white)
+![IBM Granite Code](https://img.shields.io/badge/IBM%20Granite%20Code-005F9E?style=for-the-badge&logo=ibm&logoColor=white)
 
 > **DevSpark is an automated, brutal AI Tech Lead designed to disrupt the "lazy copy-paste" habit common among modern developers.** > Instead of blindly serving up instant code solutions, DevSpark tears bad code apart with absolute honesty, then safely locks the production-ready refactor behind an interactive code gate. 
 
