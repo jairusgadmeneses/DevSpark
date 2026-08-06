@@ -2,7 +2,11 @@
 <h3 align="center">The Educational Review Orchestrator</h3>
 
 <p align="center">
-  <em>We don't just review code — we orchestrate learning sessions.</em>
+  <em>Review. Reflect. Research. Refactor.</em>
+</p>
+
+<p align="center">
+  <em>DevSpark believes engineers shouldn't only receive answers—they should also learn how to find trustworthy answers.</em>
 </p>
 
 <p align="center">
@@ -20,7 +24,7 @@
 
 > **Most AI coding tools stop at "Upload → Answer".**
 >
-> **DevSpark enforces "Upload → Analyze → Understand → Reflect → Improve".**
+> **DevSpark enforces "Upload → Analyze → Understand → Reflect → Research → Improve".**
 
 We don't hand you an answer sheet. DevSpark is an *educational review engine*: it reviews your code, prompts you to think critically about the feedback, and only then reveals the optimized solution. The learning happens in the space between the critique and the reveal.
 
@@ -34,7 +38,7 @@ The optimized solution starts **locked behind a blur overlay**. To unlock it, yo
 2. Answer two reflection prompts — identifying the most impactful issue and predicting your own improvement.
 3. Only then does the solution reveal itself with a rewarding green-flash animation.
 
-This enforces *active recall* — proven by learning science to dramatically improve retention over passive consumption.
+This enforces *active recall* — encourages active recall and reflection, learning techniques widely used to improve understanding and retention.
 
 ### 🎭 4 Review Persona Modes
 
@@ -51,6 +55,18 @@ After completing a review session, you receive a structured report including:
 - **Strengths & Improvement Areas** — side-by-side comparison
 - **Engineering Concepts** tagged as interactive badges (DRY, SOLID, KISS, etc.)
 - **Personalized Recommendation** — a single actionable next step
+
+### 🔎 Guided Engineering Research
+After completing a review session, students can investigate each critique using grounded web resources.
+
+Rather than generating another AI answer, DevSpark helps students continue learning by surfacing:
+- Official documentation
+- Framework documentation
+- Trusted technical tutorials
+- Relevant GitHub issues
+- Engineering references
+
+Powered by Bright Data.
 
 ### 📁 Drag-and-Drop Upload
 Drop a file or paste code directly. Auto-detects language from file extension and pre-selects the corresponding language option.
@@ -91,13 +107,18 @@ Drop a file or paste code directly. Auto-detects language from file extension an
 │  │   Builder                    │                 │
 │  │   4 distinct system prompts │                 │
 │  │   + JSON schema enforcement │                 │
-│  └──────────┬───────────────────┘                 │
-│             │                                     │
-│             ▼                                     │
+│  └───────┬──────────────┬───────┘                 │
+│          │              │                         │
+│          ▼              ▼                         │
+│  ┌─────────────┐  ┌─────────────┐                 │
+│  │LLM Provider │  │Bright Data   │                 │
+│  │(Code Review)│  │(Grounded     │                 │
+│  │             │  │ Research)    │                 │
+│  └───────┬─────┘  └──────┬──────┘                 │
+│          │                                         │
+│          ▼                                         │
 │  ┌──────────────────────────────┐                 │
-│  │  LLM Client (OpenAI-compat) │                 │
-│  │  Primary → Fallback model   │                 │
-│  │  with graceful degradation  │                 │
+│  │  Structured Response         │                 │
 │  └──────────────────────────────┘                 │
 └──────────────────────────────────────────────────┘
 ```
