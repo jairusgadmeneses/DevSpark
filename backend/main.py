@@ -555,21 +555,27 @@ def _extract_search_result_title(url: str) -> str:
 def _transform_brightdata_response(body: dict, query: str) -> list[dict]:
     """
     Convert a Bright Data parsed response into a list of ResearchResource dicts.
-    Bright Data's parsed JSON format for Google typically contains an 'organic'
-    key with an array of results, each with 'link', 'title', and 'description'.
-    We fail over to the raw response shape if it's not the expected format.
+    The Bright Data 'parsed_light' format for Google typically delivers results
+    within a 'results' or 'organic' list.
     """
     results: list[dict] = []
 
-    # Try common parsed SERP shapes
-    organic = body.get("organic") or body.get("results") or body.get("data")
-    if isinstance(organic, list):
-        for item in organic[:5]:
+    # Bright Data's parsed_light structure often wraps the actual data in a top-level list
+    # or a specific results key. We handle both common patterns.
+    data_source = body
+    if isinstance(body, dict):
+        # Check for common wrapper keys
+        data_source = body.get("results") or body.get("organic") or body.get("data") or body
+
+    if isinstance(data_source, list):
+        for item in data_source[:5]:
             if not isinstance(item, dict):
                 continue
-            url = item.get("link") or item.get("url")
-            title = item.get("title") or _extract_search_result_title(url or "")
-            description = item.get("description") or item.get("snippet") or ""
+            # Try all common naming conventions for the link and title
+            url = item.get("link") or item.get("url") or item.get("href")
+            title = item.get("title") or item.get("name") or _extract_search_result_title(url or "")
+            description = item.get("description") or item.get("snippet") or item.get("summary") or ""
+            
             if url:
                 results.append({
                     "title": title,
@@ -582,7 +588,7 @@ def _transform_brightdata_response(body: dict, query: str) -> list[dict]:
         return results
 
     # Fallback: if body has an explicit 'url', treat it as a single result
-    if isinstance(body.get("url"), str):
+    if isinstance(body, dict) and isinstance(body.get("url"), str):
         return [{
             "title": _extract_search_result_title(body["url"]),
             "url": body["url"],
