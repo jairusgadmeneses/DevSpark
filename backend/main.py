@@ -15,8 +15,9 @@ import json
 import logging
 from typing import Optional
 
+import httpx
 import uvicorn
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field, field_validator
 from openai import AsyncOpenAI, APIError, APITimeoutError, RateLimitError
@@ -40,6 +41,10 @@ ZENMUX_BASE_URL = os.getenv(
 )
 PRIMARY_MODEL = os.getenv("PRIMARY_MODEL", "gpt-4o-mini")
 FALLBACK_MODEL = os.getenv("FALLBACK_MODEL", "gpt-4o-mini")
+
+BRIGHTDATA_API_KEY = os.getenv("BRIGHTDATA_API_KEY", "")
+BRIGHTDATA_ZONE = os.getenv("BRIGHTDATA_ZONE", "")
+
 APP_HOST = os.getenv("APP_HOST", "0.0.0.0")
 APP_PORT = int(os.getenv("APP_PORT", "8000"))
 
