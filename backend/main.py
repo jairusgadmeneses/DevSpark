@@ -641,6 +641,19 @@ async def research(request: ResearchRequest) -> ResearchResponse:
             )
             bd_response.raise_for_status()
             body = bd_response.json()
+
+            # Bright Data sometimes nests the parsed result in body["body"].
+            # Safely unwrap it: use dict/list directly, parse JSON strings, or fall back on error/missing key.
+            if isinstance(body, dict) and "body" in body:
+                nested = body["body"]
+                if isinstance(nested, (dict, list)):
+                    body = nested
+                elif isinstance(nested, str):
+                    try:
+                        body = json.loads(nested)
+                    except json.JSONDecodeError:
+                        logger.warning("Bright Data returned a non-JSON nested body string. Using fallback resources.")
+                        body = {}
         except httpx.HTTPStatusError as exc:
             logger.error("Bright Data returned HTTP %s: %s", exc.response.status_code, exc.response.text)
             raise HTTPException(
