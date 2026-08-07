@@ -352,13 +352,13 @@ def _fallback_review_response(request: CodeRequest, error_detail: str) -> dict:
 
 
 # ---------------------------------------------------------------------------
-# Response builder — adds frontend-compatible field names
+# Response builder — validates LLM output against the canonical schema
 # ---------------------------------------------------------------------------
 
 def _build_response(parsed: dict, request: CodeRequest) -> dict:
     """
-    Validate parsed LLM output through ReviewResponse and add
-    frontend-compatibility fields (message, optimized_code).
+    Validate parsed LLM output through the canonical ReviewResponse schema.
+    Returns a dict matching ReviewResponse exactly; no duplicate or aliased fields.
     """
     # Ensure expected keys exist with safe defaults
     critiques_raw = parsed.get("critiques", [])
@@ -381,7 +381,7 @@ def _build_response(parsed: dict, request: CodeRequest) -> dict:
         item = CritiqueItem(
             line=c.get("line"),
             severity=c.get("severity", "info"),
-            explanation=c.get("explanation", c.get("message", "No explanation provided.")),
+            explanation=c.get("explanation", "No explanation provided."),
             why_it_matters=c.get(
                 "why_it_matters",
                 "Understanding this issue will help you write better code.",
@@ -395,9 +395,7 @@ def _build_response(parsed: dict, request: CodeRequest) -> dict:
                 "General best practice.",
             ),
         )
-        d = item.model_dump()
-        d["message"] = d["explanation"]  # frontend compatibility
-        critiques.append(d)
+        critiques.append(item.model_dump())
 
     # Build LearningReport
     lr = LearningReport(
@@ -444,10 +442,8 @@ def _build_response(parsed: dict, request: CodeRequest) -> dict:
         ),
     )
 
-    # Convert validated model to dict and add frontend aliases
+    # Build validated ReviewResponse dict, preserving the exact model schema.
     result = response.model_dump()
-    result["optimized_code"] = result["optimized_solution"]  # frontend compatibility
-    # Replace critiques with the enriched versions (including `message`)
     result["critiques"] = critiques
 
     return result

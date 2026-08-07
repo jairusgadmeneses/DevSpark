@@ -878,14 +878,14 @@
        *   {
        *     "line": <number>,
        *     "severity": "error" | "warning" | "info",
-       *     "message": "<engineering explanation>"
+       *     "explanation": "<engineering explanation>"
        *   }
        *
-       * optimizedCode (string, optional) – the optimized implementation code
-       *   from the backend, to be revealed after reflection.
+       * optimizedCode (string, optional) – the optimized_solution from the
+       *   backend, to be revealed after reflection.
        *
-       * learningReport (object, optional) – structured learning report data
-       *   from the backend, to be rendered after the optimized code reveal.
+       * learningReport (object, optional) – canonical LearningReport from the
+       *   backend, to be rendered after the optimized code reveal.
        */
       function renderCritiques(critiques, optimizedCode, learningReport) {
         var container = document.getElementById('critiques-container');
@@ -960,7 +960,7 @@
           // Message body
           var body = document.createElement('p');
           body.className = 'text-sm leading-relaxed text-gray-700';
-          body.textContent = c.message;
+          body.textContent = c.explanation || c.message || 'No explanation provided.';
 
           // Learn More button – passes critique message to fetchGroundedResources
           var learnBtn = document.createElement('button');
@@ -976,7 +976,7 @@
             '  </svg>' +
             '📚 <span>Learn More</span>';
           learnBtn.addEventListener('click', function () {
-            fetchGroundedResources(c.message);
+            fetchGroundedResources(c.explanation || c.message || '');
           });
 
           card.appendChild(header);
@@ -1052,9 +1052,11 @@
             // On success: hide loading, render critiques
             hideLoading();
 
-            // Extract critiques, optimized code, and learning report from the response
+            // Extract critiques, optimized solution, and learning report from the response.
+            // Backend uses the canonical ReviewResponse schema:
+            //   critiques, optimized_solution, learning_report
             var critiques = data.critiques || data.results || data;
-            var optimizedCode = data.optimized_code || '';
+            var optimizedCode = data.optimized_solution || '';
             var learningReport = data.learning_report || null;
             // If the root is an array, use it directly
             if (Array.isArray(data)) {
@@ -1095,10 +1097,13 @@
       // MILESTONE 4 — Reflection Engine
       // ============================================
 
-      const REFLECTION_MIN_CHARS = 15; // gatekeeper: 15+ chars in BOTH reflections to unlock
+      // Reflection Gatekeeper settings — meaningful reflection required.
+      const REFLECTION_MIN_CHARS = 40;
+      const REFLECTION_MIN_WORDS = 5;
 
       let reflectionOptimizedCode = '';
       let reflectionLearningReport = null;
+      let reflectionUnlocked = false;
       const reflectionSection = document.getElementById('reflection-section');
       const optimizedCodeSection = document.getElementById('optimized-code-section');
       const optimizedWrapper = document.getElementById('optimized-wrapper');
@@ -1119,20 +1124,18 @@
         // Store the optimized code for the reveal action
         reflectionOptimizedCode = optimizedCode || '';
 
-        // Set the optimized code content in the pre/code block
-        var code = reflectionOptimizedCode.trim();
-        if (!code) {
-          code = '// Optimized implementation will appear here once\n' +
-                 '// the AI review pipeline is fully connected.\n' +
-                 '// Submit your code and complete the reflection steps\n' +
-                 '// to see an AI-generated optimized version.';
-        }
-        optimizedCodeContent.textContent = code;
+        // IMPORTANT: keep the optimized solution out of the DOM until reflection is
+        // complete. Show only a placeholder in the code block.
+        reflectionUnlocked = false;
+        optimizedCodeContent.textContent =
+          '// Optimized solution is locked.\n' +
+          '// Complete the reflection steps above to reveal it.';
 
         // Reset inputs and lock state
         reflectionInput1.value = '';
         reflectionInput2.value = '';
         revealBtn.disabled = true;
+        revealBtn.textContent = 'Reveal Optimized Solution';
 
         // Show the optimized code section with the lock overlay active
         optimizedCodeSection.classList.remove('hidden');
@@ -1165,31 +1168,81 @@
       }
 
       /**
+       * isMeaningfulReflection(text)
+       *
+       * Lightweight, client-side validation that the learner has written a
+       * genuine reflection rather than filler or repeated characters.
+       * Checks:
+       *   - at least REFLECTION_MIN_CHARS non-whitespace characters
+       *   - at least REFLECTION_MIN_WORDS whitespace-separated tokens
+       *   - not a trivial repeated-character string (e.g. "aaaaaaaa...")
+       */
+      function isMeaningfulReflection(text) {
+        var trimmed = text.trim();
+        if (trimmed.length < REFLECTION_MIN_CHARS) return false;
+
+        var words = trimmed.split(/\s+/).filter(function (w) { return w.length > 0; });
+        if (words.length < REFLECTION_MIN_WORDS) return false;
+
+        // Reject strings where every character is the same (case-insensitive),
+        // e.g. "aaaaaaaaaa" or "!!!!!!!!!!".
+        var first = trimmed[0].toLowerCase();
+        var allSame = trimmed.split('').every(function (ch) {
+          return ch.toLowerCase() === first;
+        });
+        if (allSame) return false;
+
+        return true;
+      }
+
+      /**
        * updateRevealButton()
        *
-       * Checks whether both reflection inputs have at least REFLECTION_MIN_CHARS
-       * (trimmed, non-whitespace). If yes, enables the Reveal button.
-       * If not, keeps it disabled and visually faded.
+       * Enables the Reveal button only when both reflection responses pass
+       * the meaningful-reflection check. Also provides live visual feedback.
        */
       function updateRevealButton() {
         var val1 = reflectionInput1.value.trim();
         var val2 = reflectionInput2.value.trim();
-        var ready = val1.length >= REFLECTION_MIN_CHARS && val2.length >= REFLECTION_MIN_CHARS;
+        var ready =
+          isMeaningfulReflection(val1) && isMeaningfulReflection(val2);
         revealBtn.disabled = !ready;
 
         // Visual feedback on textareas when they meet the threshold
-        reflectionInput1.classList.toggle('reflection-filled', val1.length >= REFLECTION_MIN_CHARS);
-        reflectionInput2.classList.toggle('reflection-filled', val2.length >= REFLECTION_MIN_CHARS);
+        reflectionInput1.classList.toggle('reflection-filled', isMeaningfulReflection(val1));
+        reflectionInput2.classList.toggle('reflection-filled', isMeaningfulReflection(val2));
       }
 
       /**
        * revealOptimizedCode()
        *
        * Called when the user clicks "Reveal Optimized Solution".
-       * Removes the blur/padlock overlay with a rewarding animation,
+       * Re-validates the reflection responses, then injects the optimized
+       * solution into the DOM for the first time, removes the lock overlay,
        * adds a green success border, and scrolls the code into view.
        */
       function revealOptimizedCode() {
+        // Final gate: require meaningful reflection before revealing the solution.
+        var val1 = reflectionInput1.value.trim();
+        var val2 = reflectionInput2.value.trim();
+        if (!isMeaningfulReflection(val1) || !isMeaningfulReflection(val2)) {
+          revealBtn.textContent = 'Please write a meaningful reflection first';
+          setTimeout(function () {
+            revealBtn.textContent = 'Reveal Optimized Solution';
+          }, 2000);
+          return;
+        }
+
+        // Inject the optimized solution into the DOM only at unlock time.
+        if (!reflectionUnlocked) {
+          var code = reflectionOptimizedCode.trim();
+          if (!code) {
+            code = '// No optimized solution was returned by the reviewer.';
+          }
+          optimizedCodeContent.textContent = code;
+          reflectionUnlocked = true;
+        }
+
         // Fade out the lock overlay
         if (optimizedLockOverlay) {
           optimizedLockOverlay.style.opacity = '0';
@@ -1228,14 +1281,14 @@
       /**
        * renderLearningReport(reportData)
        *
-       * Takes a structured JSON object and dynamically populates the
-       * Learning Report dashboard with:
-       *   - overall_code_quality (number, e.g. 82)
+       * Takes the canonical LearningReport object from the backend and
+       * dynamically populates the Learning Report dashboard with:
+       *   - code_quality_score (number, e.g. 82)
        *   - max_score (number, default 100)
        *   - strengths (array of strings)
-       *   - improvements (array of strings)
-       *   - concepts (array of strings – engineering concepts)
-       *   - recommendation (string – personalized next step)
+       *   - improvement_areas (array of strings)
+       *   - engineering_concepts (array of strings – engineering concepts)
+       *   - personalized_recommendation (string – personalized next step)
        *
        * Also computes honest category sub-scores from existing data
        * and renders the "Next Concept to Learn" card.
@@ -1254,8 +1307,8 @@
         }
 
         // --- Overall Score ---
-        var score = typeof reportData.overall_code_quality === 'number'
-          ? reportData.overall_code_quality
+        var score = typeof reportData.code_quality_score === 'number'
+          ? reportData.code_quality_score
           : null;
         var maxScore = typeof reportData.max_score === 'number'
           ? reportData.max_score
@@ -1276,8 +1329,8 @@
         computeAndRenderCategoryScores(
           score || 70,
           reportData.strengths || [],
-          reportData.improvements || [],
-          reportData.concepts || []
+          reportData.improvement_areas || [],
+          reportData.engineering_concepts || []
         );
 
         // --- Strengths ---
@@ -1307,8 +1360,8 @@
         // --- Improvement Areas ---
         var improvementsList = document.getElementById('report-improvements');
         improvementsList.innerHTML = '';
-        if (Array.isArray(reportData.improvements) && reportData.improvements.length > 0) {
-          reportData.improvements.forEach(function (item) {
+        if (Array.isArray(reportData.improvement_areas) && reportData.improvement_areas.length > 0) {
+          reportData.improvement_areas.forEach(function (item) {
             var li = document.createElement('li');
             li.className = 'flex items-start gap-2 text-sm text-gray-700';
             li.innerHTML =
@@ -1331,8 +1384,8 @@
         // --- Engineering Concepts (badge-style) ---
         var conceptsContainer = document.getElementById('report-concepts');
         conceptsContainer.innerHTML = '';
-        if (Array.isArray(reportData.concepts) && reportData.concepts.length > 0) {
-          reportData.concepts.forEach(function (concept) {
+        if (Array.isArray(reportData.engineering_concepts) && reportData.engineering_concepts.length > 0) {
+          reportData.engineering_concepts.forEach(function (concept) {
             var badge = document.createElement('span');
             badge.className =
               'concept-badge inline-flex items-center rounded-full bg-indigo-100 px-3 py-1 ' +
@@ -1347,14 +1400,14 @@
 
         // --- Next Concept to Learn ---
         var nextConceptEl = document.getElementById('report-next-concept');
-        var concepts = reportData.concepts || [];
+        var concepts = reportData.engineering_concepts || [];
         // Pick the first concept from the list as the "Next Concept to Learn"
         if (Array.isArray(concepts) && concepts.length > 0) {
           nextConceptEl.innerHTML =
             '<span class="font-semibold">' + escapeHtml(concepts[0]) + '</span> &mdash; ' +
             'focus on mastering this engineering principle in your next review.';
-        } else if (reportData.recommendation && typeof reportData.recommendation === 'string') {
-          nextConceptEl.textContent = reportData.recommendation;
+        } else if (reportData.personalized_recommendation && typeof reportData.personalized_recommendation === 'string') {
+          nextConceptEl.textContent = reportData.personalized_recommendation;
         } else {
           nextConceptEl.textContent = 'Continue practising — regular code reviews will help you grow.';
         }
