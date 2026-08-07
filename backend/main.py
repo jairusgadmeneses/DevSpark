@@ -137,6 +137,37 @@ class ReviewResponse(BaseModel):
     session_summary: dict
 
 
+class ResearchRequest(BaseModel):
+    """Inbound payload for a guided research query."""
+
+    query: str
+
+    @field_validator("query")
+    @classmethod
+    def _query_meaningful(cls, v: str) -> str:
+        stripped = v.strip()
+        if not stripped:
+            raise ValueError("query must not be empty")
+        if len(stripped) < 3:
+            raise ValueError("query must be at least 3 characters")
+        return stripped
+
+
+class ResearchResource(BaseModel):
+    """A single grounded research resource returned to the frontend."""
+
+    title: str
+    url: str
+    description: str
+    type: str = "docs"
+
+
+class ResearchResponse(BaseModel):
+    """Top-level response for the research endpoint."""
+
+    resources: list[ResearchResource]
+
+
 # ---------------------------------------------------------------------------
 # Persona-aware system prompts
 # ---------------------------------------------------------------------------
