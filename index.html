@@ -1715,15 +1715,17 @@
       /**
        * fetchGroundedResources(query)
        *
-       * Main entry point for the Debug Coach feature.
+       * Main entry point for the Guided Engineering Research feature.
        *
        * - Scrolls the user to the "Explore Further" section.
        * - Shows a distinct loading animation with the Bright Data sponsor message.
-       * - Simulates a 2-second API delay, then replaces the loading state with
-       *   mock documentation resource cards.
+       * - Calls the backend POST /api/research endpoint, which proxies the
+       *   request to Bright Data server-side.
+       * - Renders the returned resources as clickable cards.
        *
-       * In production, this would call the Bright Data Unlocker API (or a
-       * Supabase Edge Function proxy) to fetch real documentation URLs.
+       * If the backend reports that Bright Data is not configured, we show a
+       * friendly message telling the user exactly what is missing instead of
+       * failing silently.
        */
       function fetchGroundedResources(query) {
         if (!query || typeof query !== 'string') return;
@@ -1734,32 +1736,30 @@
         // 2. Scroll down to the Explore Further section smoothly
         exploreSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
 
-        // 3. Simulate 2s API call (Bright Data integration)
-        setTimeout(function () {
-          // Build mock resources grounded in the user's query context
-          var mockResources = [
-            {
-              title: 'View Official Docs',
-              url: 'https://developer.mozilla.org/en-US/search?q=' + encodeURIComponent(query),
-              description: 'Search MDN Web Docs for "' + query.slice(0, 60) + '" — authoritative documentation and guides.',
-              type: 'docs'
-            },
-            {
-              title: 'Related GitHub Issue',
-              url: 'https://github.com/search?q=' + encodeURIComponent(query) + '&type=issues',
-              description: 'Find real-world discussions and solutions on GitHub related to this engineering concern.',
-              type: 'github'
-            },
-            {
-              title: 'Stack Overflow Discussion',
-              url: 'https://stackoverflow.com/search?q=' + encodeURIComponent(query),
-              description: 'See how the developer community has solved similar problems and best practices.',
-              type: 'docs'
+        // 3. Call the backend research endpoint
+        fetch('/api/research', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ query: query })
+        })
+          .then(function (response) {
+            if (!response.ok) {
+              return response.text().then(function (text) {
+                throw new Error(text || 'Server returned ' + response.status);
+              });
             }
-          ];
-
-          renderExploreResources(mockResources);
-        }, 2000);
+            return response.json();
+          })
+          .then(function (data) {
+            var resources = data.resources || [];
+            renderExploreResources(resources);
+          })
+          .catch(function (err) {
+            console.error('Research request failed:', err);
+            showExploreError(
+              err.message || 'Unable to fetch documentation resources. Please try again later.'
+            );
+          });
       }
     </script>
 

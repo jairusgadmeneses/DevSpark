@@ -13,10 +13,12 @@ import asyncio
 import os
 import json
 import logging
+import urllib.parse
 from typing import Optional
 
+import httpx
 import uvicorn
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field, field_validator
 from openai import AsyncOpenAI, APIError, APITimeoutError, RateLimitError
@@ -40,6 +42,10 @@ ZENMUX_BASE_URL = os.getenv(
 )
 PRIMARY_MODEL = os.getenv("PRIMARY_MODEL", "gpt-4o-mini")
 FALLBACK_MODEL = os.getenv("FALLBACK_MODEL", "gpt-4o-mini")
+
+BRIGHTDATA_API_KEY = os.getenv("BRIGHTDATA_API_KEY", "")
+BRIGHTDATA_ZONE = os.getenv("BRIGHTDATA_ZONE", "")
+
 APP_HOST = os.getenv("APP_HOST", "0.0.0.0")
 APP_PORT = int(os.getenv("APP_PORT", "8000"))
 
@@ -130,6 +136,37 @@ class ReviewResponse(BaseModel):
     reflection: dict
     optimized_solution: str
     session_summary: dict
+
+
+class ResearchRequest(BaseModel):
+    """Inbound payload for a guided research query."""
+
+    query: str
+
+    @field_validator("query")
+    @classmethod
+    def _query_meaningful(cls, v: str) -> str:
+        stripped = v.strip()
+        if not stripped:
+            raise ValueError("query must not be empty")
+        if len(stripped) < 3:
+            raise ValueError("query must be at least 3 characters")
+        return stripped
+
+
+class ResearchResource(BaseModel):
+    """A single grounded research resource returned to the frontend."""
+
+    title: str
+    url: str
+    description: str
+    type: str = "docs"
+
+
+class ResearchResponse(BaseModel):
+    """Top-level response for the research endpoint."""
+
+    resources: list[ResearchResource]
 
 
 # ---------------------------------------------------------------------------
@@ -492,6 +529,143 @@ async def review_code(request: CodeRequest) -> dict:
             request,
             "An unexpected error occurred. Please try again.",
         )
+
+
+# ---------------------------------------------------------------------------
+# Guided Engineering Research — Bright Data proxy
+# ---------------------------------------------------------------------------
+
+
+def _build_google_search_url(query: str) -> str:
+    """Build a Google search URL from the user's research query."""
+    encoded = urllib.parse.quote_plus(query)
+    return f"https://www.google.com/search?q={encoded}"
+
+
+def _extract_search_result_title(url: str) -> str:
+    """Derive a readable title from a search result URL."""
+    parsed = urllib.parse.urlparse(url)
+    domain = parsed.netloc.lower()
+    # Strip www prefix for display
+    if domain.startswith("www."):
+        domain = domain[4:]
+    return domain or "Search Result"
+
+
+def _transform_brightdata_response(body: dict, query: str) -> list[dict]:
+    """
+    Convert a Bright Data parsed response into a list of ResearchResource dicts.
+    Bright Data's parsed JSON format for Google typically contains an 'organic'
+    key with an array of results, each with 'link', 'title', and 'description'.
+    We fail over to the raw response shape if it's not the expected format.
+    """
+    results: list[dict] = []
+
+    # Try common parsed SERP shapes
+    organic = body.get("organic") or body.get("results") or body.get("data")
+    if isinstance(organic, list):
+        for item in organic[:5]:
+            if not isinstance(item, dict):
+                continue
+            url = item.get("link") or item.get("url")
+            title = item.get("title") or _extract_search_result_title(url or "")
+            description = item.get("description") or item.get("snippet") or ""
+            if url:
+                results.append({
+                    "title": title,
+                    "url": url,
+                    "description": str(description)[:240],
+                    "type": "docs",
+                })
+
+    if results:
+        return results
+
+    # Fallback: if body has an explicit 'url', treat it as a single result
+    if isinstance(body.get("url"), str):
+        return [{
+            "title": _extract_search_result_title(body["url"]),
+            "url": body["url"],
+            "description": "Bright Data returned this resource for your query.",
+            "type": "docs",
+        }]
+
+    return []
+
+
+@app.post("/api/research")
+async def research(request: ResearchRequest) -> ResearchResponse:
+    """
+    Accept a research query from the frontend and return grounded web resources.
+
+    In production, this calls the Bright Data SERP API server-side using the
+    configured API key and zone. If Bright Data is not configured, it returns
+    an HTTP 503 with a clear message explaining the missing configuration.
+    """
+    if not BRIGHTDATA_API_KEY or BRIGHTDATA_API_KEY == "your_brightdata_api_key_here":
+        raise HTTPException(
+            status_code=503,
+            detail="Bright Data API key is not configured. Set BRIGHTDATA_API_KEY.",
+        )
+    if not BRIGHTDATA_ZONE or BRIGHTDATA_ZONE == "your_brightdata_zone_name_here":
+        raise HTTPException(
+            status_code=503,
+            detail="Bright Data zone is not configured. Set BRIGHTDATA_ZONE.",
+        )
+
+    search_url = _build_google_search_url(request.query)
+    payload = {
+        "zone": BRIGHTDATA_ZONE,
+        "url": search_url,
+        "format": "json",
+        "data_format": "parsed_light",
+    }
+    headers = {
+        "Authorization": f"Bearer {BRIGHTDATA_API_KEY}",
+        "Content-Type": "application/json",
+    }
+
+    async with httpx.AsyncClient(timeout=30.0) as http:
+        try:
+            logger.info("Calling Bright Data research for query: %s", request.query)
+            bd_response = await http.post(
+                "https://api.brightdata.com/request",
+                json=payload,
+                headers=headers,
+            )
+            bd_response.raise_for_status()
+            body = bd_response.json()
+        except httpx.HTTPStatusError as exc:
+            logger.error("Bright Data returned HTTP %s: %s", exc.response.status_code, exc.response.text)
+            raise HTTPException(
+                status_code=502,
+                detail="Could not retrieve resources from Bright Data. Please try again later.",
+            ) from exc
+        except httpx.RequestError as exc:
+            logger.error("Bright Data request failed: %s", exc)
+            raise HTTPException(
+                status_code=502,
+                detail="Could not reach the research provider. Please try again later.",
+            ) from exc
+        except Exception as exc:
+            logger.exception("Unexpected error during Bright Data call")
+            raise HTTPException(
+                status_code=500,
+                detail="An unexpected error occurred while fetching research resources.",
+            ) from exc
+
+    resources = _transform_brightdata_response(body, request.query)
+
+    # Always ensure we have at least a safe fallback so the frontend never hangs.
+    if not resources:
+        resources = [{
+            "title": "Search results",
+            "url": search_url,
+            "description": "View the raw search results for this topic.",
+            "type": "docs",
+        }]
+
+    return ResearchResponse(resources=[ResearchResource(**r) for r in resources])
 
 
 # ---------------------------------------------------------------------------
