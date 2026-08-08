@@ -1383,7 +1383,7 @@
             // Backend uses the canonical ReviewResponse schema:
             //   critiques, optimized_solution, learning_report
             var critiques = data.critiques || data.results || data;
-            var optimizedCode = data.optimized_solution || '';
+            var optimizedCode = (data.optimized_solution || data.optimized_code || '').toString();
             var learningReport = data.learning_report || null;
             // If the root is an array, use it directly
             if (Array.isArray(data)) {
