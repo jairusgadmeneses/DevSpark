@@ -1300,7 +1300,7 @@
        *
        * Called when the user clicks "Submit for Learning Session".
        * - Hides the submission zone and shows the loading overlay.
-       * - Sends a POST request to /api/review with the code, language, and persona.
+       * - Sends a POST request to /review (Supabase Edge Function) with the code, language, and persona.
        * - On success: hides loading, renders critiques via renderCritiques().
        * - On error: hides loading, shows a user-friendly error message.
        */
@@ -2009,7 +2009,7 @@
        *
        * - Scrolls the user to the "Explore Further" section.
        * - Shows a distinct loading animation with the Bright Data sponsor message.
-       * - Calls the backend POST /api/research endpoint, which proxies the
+       * - Calls the backend POST /research endpoint (Supabase Edge Function), which proxies the
        *   request to Bright Data server-side.
        * - Renders the returned resources as clickable cards.
        *
