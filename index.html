@@ -946,6 +946,14 @@
       document.getElementById('year').textContent = new Date().getFullYear();
 
       // ============================================
+      // Backend API base URL — deployed Render backend.
+      // All relative /api/* requests are prefixed with
+      // this base so the frontend talks directly to the
+      // public backend (no local Vite proxy involved).
+      // ============================================
+      const API_BASE_URL = 'https://devspark-backend-u033.onrender.com';
+
+      // ============================================
       // Loading State – shared by analyze and submit
       // ============================================
 
@@ -1319,7 +1327,7 @@
         };
 
         // 3. POST to backend API
-        var apiUrl = '/api/review';
+        var apiUrl = API_BASE_URL + '/api/review';
 
         // Use the native Fetch API
         fetch(apiUrl, {
@@ -2019,7 +2027,7 @@
         exploreSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
 
         // 3. Call the backend research endpoint
-        fetch('/api/research', {
+        fetch(API_BASE_URL + '/api/research', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ query: query })
